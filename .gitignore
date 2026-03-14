@@ -1,0 +1,19 @@
+# never commit datasets or generated artifacts
+data/raw/
+data/processed/
+outputs/
+artifacts/
+
+# python caches
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# environments
+.venv/
+.env
+
+# OS noise
+.DS_Store
+__MACOSX/
+Thumbs.db

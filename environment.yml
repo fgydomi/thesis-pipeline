@@ -1,0 +1,12 @@
+name: thesis-pipeline
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pip
+  - numpy
+  - pandas
+  - scikit-image
+  - tifffile
+  - lxml
+  - tqdm
