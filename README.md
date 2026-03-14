@@ -9,15 +9,17 @@ Minimal, reproducible benchmark pipeline for MoNuSeg nuclei instance segmentatio
 - Focus: accuracy + runtime + usability
 
 ## Local data (not committed)
+
 Expected layout:
 
+```text
 data/raw/
-monuseg_train/
-Tissue Images/ # .tif
-Annotations/ # .xml
-monuseg_test/
-Tissue Images/ # .tif
-Annotations/ # .xml
+  monuseg_train/
+    Tissue Images/        # .tif
+    Annotations/          # .xml
+  monuseg_test/
+    Tissue Images/        # .tif
+    Annotations/          # .xml
 
 ## Setup
 ```bash
