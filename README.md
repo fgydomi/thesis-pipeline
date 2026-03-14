@@ -20,11 +20,15 @@ data/raw/
   monuseg_test/
     Tissue Images/        # .tif
     Annotations/          # .xml
+```
 
 ## Setup
 ```bash
 conda env create -f environment.yml
 conda activate thesis-pipeline
+```
 
 ## Sanity check
+```
 python scripts/00_dataset_sanity.py
+```
