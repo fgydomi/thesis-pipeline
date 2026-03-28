@@ -2,42 +2,38 @@ from __future__ import annotations
 
 from pathlib import Path
 
-ROOT = Path("data/raw")
-
-TRAIN = ROOT / "monuseg_train"
-TEST = ROOT / "monuseg_test"
+from nuclei_benchmark.data.dataset import summarize_split
 
 
-def check_pairing(images_dir: Path, ann_dir: Path) -> None:
-    images = sorted(images_dir.glob("*.tif"))
-    xmls = sorted(ann_dir.glob("*.xml"))
+RAW_ROOT = Path("data/raw")
 
-    img_stems = {p.stem for p in images}
-    xml_stems = {p.stem for p in xmls}
 
-    missing_xml = sorted(list(img_stems - xml_stems))
-    missing_img = sorted(list(xml_stems - img_stems))
-    paired = len(img_stems & xml_stems)
+def print_summary(split: str) -> None:
+    summary = summarize_split(RAW_ROOT, split)
 
-    print(f"Images (.tif): {len(images)}")
-    print(f"Annotations (.xml): {len(xmls)}")
-    print(f"Paired: {paired}")
+    print(f"== MoNuSeg {split.upper()} ==")
+    print(f"Images (.tif): {summary.image_count}")
+    print(f"Annotations (.xml): {summary.annotation_count}")
+    print(f"Paired: {summary.paired_count}")
 
-    if missing_xml:
-        print(f"Missing XML for {len(missing_xml)} images (showing up to 5): {missing_xml[:5]}")
-    if missing_img:
-        print(f"Missing image for {len(missing_img)} XMLs (showing up to 5): {missing_img[:5]}")
+    if summary.missing_annotations:
+        print(
+            f"Missing XML for {len(summary.missing_annotations)} images "
+            f"(showing up to 5): {summary.missing_annotations[:5]}"
+        )
+
+    if summary.missing_images:
+        print(
+            f"Missing image for {len(summary.missing_images)} XML files "
+            f"(showing up to 5): {summary.missing_images[:5]}"
+        )
+
+    print()
 
 
 def main() -> None:
-    print("== MoNuSeg TRAIN ==")
-    check_pairing(TRAIN / "Tissue Images", TRAIN / "Annotations")
-    print()
-
-    print("== MoNuSeg TEST ==")
-    check_pairing(TEST / "Tissue Images", TEST / "Annotations")
-    print()
-
+    print_summary("train")
+    print_summary("test")
     print("OK: dataset structure looks consistent.")
 
 
