@@ -1,6 +1,7 @@
 # never commit datasets or generated artifacts
 data/raw/
 data/processed/
+data/interim/
 outputs/
 artifacts/
 
