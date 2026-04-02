@@ -1,0 +1,18 @@
+model_name: cellpose
+
+runtime:
+  device: cpu
+  use_gpu: false
+
+model:
+  pretrained_model: null
+
+inference:
+  channel_axis: -1
+  normalize: true
+  diameter: null
+
+output:
+  save_instance_masks: true
+  save_flows: false
+  save_styles: false

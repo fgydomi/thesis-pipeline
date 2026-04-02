@@ -10,3 +10,4 @@ dependencies:
   - tifffile
   - lxml
   - tqdm
+  - pyyaml
