@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+import torch
 
 from nuclei_benchmark.models.base import BaseSegmentationModel, ModelPrediction
 from nuclei_benchmark.utils.config import load_yaml_config
@@ -41,6 +42,25 @@ class CellposeModelWrapper(BaseSegmentationModel):
             raise ValueError(f"Unsupported device setting in config: {device}")
         return device
 
+    def _resolve_runtime(self) -> tuple[str, bool]:
+        device_preference = self.get_device_preference()
+        cuda_available = torch.cuda.is_available()
+
+        if device_preference == "cuda":
+            if not cuda_available:
+                raise RuntimeError(
+                    "Config requests device='cuda', but CUDA is not available."
+                )
+            return "cuda", True
+
+        if device_preference == "cpu":
+            return "cpu", False
+
+        # auto
+        if cuda_available:
+            return "cuda", True
+        return "cpu", False
+
     def _create_model(self):
         try:
             from cellpose.models import CellposeModel
@@ -49,19 +69,21 @@ class CellposeModelWrapper(BaseSegmentationModel):
                 "Cellpose is not installed in the active environment."
             ) from exc
 
-        use_gpu = bool(self.runtime_config.get("use_gpu", False))
+        resolved_device, use_gpu = self._resolve_runtime()
         pretrained_model = self.model_config.get("pretrained_model")
 
         if pretrained_model in (None, "", "default"):
-            return CellposeModel(gpu=use_gpu)
+            model = CellposeModel(gpu=use_gpu)
+        else:
+            model = CellposeModel(gpu=use_gpu, pretrained_model=pretrained_model)
 
-        return CellposeModel(gpu=use_gpu, pretrained_model=pretrained_model)
+        return model, resolved_device
 
     def predict(self, image: np.ndarray, image_id: str) -> ModelPrediction:
         if image.ndim not in (2, 3):
             raise ValueError(f"Unsupported image shape for Cellpose: {image.shape}")
 
-        model = self._create_model()
+        model, resolved_device = self._create_model()
 
         masks, flows, styles = model.eval(
             [image],
@@ -74,7 +96,8 @@ class CellposeModelWrapper(BaseSegmentationModel):
 
         metadata = {
             "model_name": self.model_name,
-            "device": self.get_device_preference(),
+            "device_requested": self.get_device_preference(),
+            "device_resolved": resolved_device,
             "num_flow_entries": len(flows),
             "num_style_entries": len(styles),
             "max_label": int(instance_mask.max()),

@@ -17,7 +17,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--image-path",
         type=Path,
-        default=Path(r"data\raw\monuseg_train\Tissue Images\TCGA-18-5592-01Z-00-DX1.tif"),
+        default=Path(r"data\raw\monuseg_train\Tissue_Images\TCGA-18-5592-01Z-00-DX1.tif"),
     )
     parser.add_argument(
         "--config-path",

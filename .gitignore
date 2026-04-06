@@ -4,6 +4,7 @@ data/processed/
 data/interim/
 outputs/
 artifacts/
+docs/
 
 # python caches
 __pycache__/

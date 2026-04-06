@@ -15,10 +15,10 @@ Expected layout:
 ```text
 data/raw/
   monuseg_train/
-    Tissue Images/        # .tif
+    Tissue_Images/        # .tif
     Annotations/          # .xml
   monuseg_test/
-    Tissue Images/        # .tif
+    Tissue_Images/        # .tif
     Annotations/          # .xml
 ```
 

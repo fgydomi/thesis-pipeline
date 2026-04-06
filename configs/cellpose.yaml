@@ -1,8 +1,7 @@
 model_name: cellpose
 
 runtime:
-  device: cpu
-  use_gpu: false
+  device: cuda
 
 model:
   pretrained_model: null

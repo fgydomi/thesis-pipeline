@@ -34,7 +34,7 @@ def get_split_dirs(raw_root: Path, split: SplitName) -> tuple[Path, Path]:
     """Return the image and annotation directories for a split."""
 
     split_root = raw_root / f"monuseg_{split}"
-    images_dir = split_root / "Tissue Images"
+    images_dir = split_root / "Tissue_Images"
     annotations_dir = split_root / "Annotations"
 
     if not images_dir.exists():
