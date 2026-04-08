@@ -1,0 +1,14 @@
+model_name: stardist
+
+runtime:
+  device: gpu
+
+model:
+  pretrained_model: "2D_versatile_he"
+
+inference:
+  normalize: true
+
+output:
+  save_instance_masks: true
+  save_details: false
