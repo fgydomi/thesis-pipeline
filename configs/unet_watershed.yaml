@@ -1,0 +1,15 @@
+model_name: unet_watershed
+
+runtime:
+  device: cpu
+
+model:
+  foreground_source: binary_mask
+
+inference:
+  threshold: 0.5
+  min_size: 16
+  min_distance: 9
+
+output:
+  save_instance_masks: true

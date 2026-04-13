@@ -1,0 +1,33 @@
+model_name: unet
+
+data:
+  manifest_path: data/interim/monuseg_manifest.csv
+  train_split: train
+  val_count: 8
+  split_seed: 42
+  patch_size: 256
+  samples_per_epoch: 512
+  preload: true
+
+model:
+  in_channels: 3
+  out_channels: 1
+  base_channels: 32
+
+training:
+  device: auto
+  batch_size: 2
+  num_workers: 0
+  learning_rate: 0.001
+  max_epochs: 50
+  early_stopping_patience: 10
+
+validation:
+  tile_size: 256
+  threshold: 0.5
+
+output:
+  checkpoint_dir: outputs/checkpoints/unet
+  best_checkpoint_name: unet_best.pt
+  history_csv_name: training_history.csv
+  split_json_name: train_val_split.json
