@@ -8,6 +8,9 @@ data:
   patch_size: 256
   samples_per_epoch: 512
   preload: true
+  foreground_sampling_prob: 0.7
+  min_foreground_fraction: 0.01
+  max_sampling_tries: 20
 
 model:
   in_channels: 3
@@ -27,7 +30,7 @@ validation:
   threshold: 0.5
 
 output:
-  checkpoint_dir: outputs/checkpoints/unet
+  checkpoint_dir: outputs/checkpoints/unet_fg_biased
   best_checkpoint_name: unet_best.pt
   history_csv_name: training_history.csv
   split_json_name: train_val_split.json

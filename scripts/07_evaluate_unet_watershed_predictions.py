@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import argparse
 import csv
-import statistics
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import tifffile
+
 from nuclei_benchmark.metrics.instance_metrics import (
     aggregated_jaccard_index,
     binary_dice,
@@ -16,13 +16,13 @@ from nuclei_benchmark.metrics.instance_metrics import (
 
 
 DEFAULT_MANIFEST_PATH = Path("data/interim/monuseg_manifest.csv")
-DEFAULT_PREDICTION_ROOT = Path("outputs/predictions/cellpose_manifest")
-DEFAULT_METRICS_ROOT = Path("outputs/metrics/cellpose")
+DEFAULT_PREDICTION_ROOT = Path("outputs/predictions/unet_watershed_manifest")
+DEFAULT_METRICS_ROOT = Path("outputs/metrics/unet_watershed")
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Evaluate Cellpose predictions against GT instance masks."
+        description="Evaluate U-Net + Watershed predictions against GT instance masks."
     )
     parser.add_argument(
         "--manifest",
@@ -41,7 +41,7 @@ def parse_args() -> argparse.Namespace:
         "--prediction-dir",
         type=Path,
         default=None,
-        help="Directory containing Cellpose prediction masks.",
+        help="Directory containing U-Net + Watershed prediction masks.",
     )
     parser.add_argument(
         "--output-dir",
@@ -60,6 +60,10 @@ def parse_args() -> argparse.Namespace:
 
 def ensure_dir(path: Path) -> None:
     path.mkdir(parents=True, exist_ok=True)
+
+
+def normalize_manifest_path(path_str: str) -> Path:
+    return Path(path_str.replace("\\", "/"))
 
 
 def load_manifest_rows(manifest_path: Path, split: str, limit: int) -> list[dict]:
@@ -170,7 +174,7 @@ def main() -> None:
         if args.output_dir is not None
         else DEFAULT_METRICS_ROOT / args.split
     )
-    metrics_csv_path = output_dir / "cellpose_metrics.csv"
+    metrics_csv_path = output_dir / "unet_watershed_metrics.csv"
 
     ensure_dir(output_dir)
 
@@ -182,7 +186,7 @@ def main() -> None:
 
     metrics_rows: list[dict[str, str]] = []
 
-    print("Evaluating Cellpose predictions")
+    print("Evaluating U-Net + Watershed predictions")
     print(f"Manifest: {args.manifest}")
     print(f"Split: {args.split}")
     print(f"Prediction directory: {prediction_dir}")
@@ -192,8 +196,8 @@ def main() -> None:
 
     for index, row in enumerate(manifest_rows, start=1):
         image_id = str(row["image_id"])
-        gt_mask_path = Path(row["gt_instance_path"])
-        pred_mask_path = prediction_dir / f"{image_id}_cellpose_inst.tif"
+        gt_mask_path = normalize_manifest_path(str(row["gt_instance_path"]))
+        pred_mask_path = prediction_dir / f"{image_id}_unet_watershed_inst.tif"
 
         print(f"[{index}/{len(manifest_rows)}] Evaluating: {image_id}")
         print(f"  GT path:   {gt_mask_path}")
@@ -215,7 +219,7 @@ def main() -> None:
             print("  Status: success")
             print(f"  Dice (fg): {metrics_row['dice_fg']}")
             print(f"  IoU  (fg): {metrics_row['iou_fg']}")
-            print(f"  AJI:      {metrics_row['aji']}")
+            print(f"  AJI:       {metrics_row['aji']}")
             print()
 
         except Exception as exc:
@@ -252,7 +256,7 @@ def main() -> None:
         writer.writeheader()
         writer.writerows(metrics_rows)
 
-    print("Cellpose evaluation finished.")
+    print("U-Net + Watershed evaluation finished.")
     print(f"Metrics CSV: {metrics_csv_path}")
     summarize_metrics(metrics_rows)
 

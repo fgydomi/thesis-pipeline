@@ -8,7 +8,11 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import tifffile
-
+from nuclei_benchmark.metrics.instance_metrics import (
+    aggregated_jaccard_index,
+    binary_dice,
+    binary_iou,
+)
 
 DEFAULT_MANIFEST_PATH = Path("data/interim/monuseg_manifest.csv")
 DEFAULT_PREDICTION_ROOT = Path("outputs/predictions/stardist_manifest")
@@ -99,41 +103,6 @@ def load_label_mask(path: Path) -> np.ndarray:
     return tifffile.imread(path)
 
 
-def to_binary_foreground(mask: np.ndarray) -> np.ndarray:
-    return np.asarray(mask > 0, dtype=bool)
-
-
-def compute_binary_dice(gt_mask: np.ndarray, pred_mask: np.ndarray) -> float:
-    gt_fg = to_binary_foreground(gt_mask)
-    pred_fg = to_binary_foreground(pred_mask)
-
-    intersection = np.logical_and(gt_fg, pred_fg).sum()
-    gt_sum = gt_fg.sum()
-    pred_sum = pred_fg.sum()
-
-    if gt_sum == 0 and pred_sum == 0:
-        return 1.0
-
-    denominator = gt_sum + pred_sum
-    if denominator == 0:
-        return 0.0
-
-    return float((2.0 * intersection) / denominator)
-
-
-def compute_binary_iou(gt_mask: np.ndarray, pred_mask: np.ndarray) -> float:
-    gt_fg = to_binary_foreground(gt_mask)
-    pred_fg = to_binary_foreground(pred_mask)
-
-    intersection = np.logical_and(gt_fg, pred_fg).sum()
-    union = np.logical_or(gt_fg, pred_fg).sum()
-
-    if union == 0:
-        return 1.0
-
-    return float(intersection / union)
-
-
 def validate_same_shape(image_id: str, gt_mask: np.ndarray, pred_mask: np.ndarray) -> None:
     if gt_mask.shape != pred_mask.shape:
         raise ValueError(
@@ -146,8 +115,9 @@ def build_metrics_row(
     gt_mask: np.ndarray,
     pred_mask: np.ndarray,
 ) -> dict[str, str]:
-    dice = compute_binary_dice(gt_mask, pred_mask)
-    iou = compute_binary_iou(gt_mask, pred_mask)
+    dice = binary_dice(gt_mask, pred_mask)
+    iou = binary_iou(gt_mask, pred_mask)
+    aji = aggregated_jaccard_index(gt_mask, pred_mask)
 
     gt_foreground_pixels = int((gt_mask > 0).sum())
     pred_foreground_pixels = int((pred_mask > 0).sum())
@@ -158,6 +128,7 @@ def build_metrics_row(
         "shape": "x".join(str(dim) for dim in gt_mask.shape),
         "dice_fg": f"{dice:.6f}",
         "iou_fg": f"{iou:.6f}",
+        "aji": f"{aji:.6f}",
         "gt_foreground_pixels": str(gt_foreground_pixels),
         "pred_foreground_pixels": str(pred_foreground_pixels),
     }
@@ -176,13 +147,17 @@ def summarize_metrics(metrics_rows: list[dict[str, str]]) -> None:
     if successful_rows:
         dice_values = [float(row["dice_fg"]) for row in successful_rows]
         iou_values = [float(row["iou_fg"]) for row in successful_rows]
+        aji_values = [float(row["aji"]) for row in successful_rows]
 
-        print(f"  Mean Dice (foreground): {statistics.mean(dice_values):.6f}")
-        print(f"  Mean IoU  (foreground): {statistics.mean(iou_values):.6f}")
+        print(f"  Mean Dice (foreground): {sum(dice_values) / len(dice_values):.6f}")
+        print(f"  Mean IoU  (foreground): {sum(iou_values) / len(iou_values):.6f}")
+        print(f"  Mean AJI:              {sum(aji_values) / len(aji_values):.6f}")
         print(f"  Min Dice  (foreground): {min(dice_values):.6f}")
         print(f"  Max Dice  (foreground): {max(dice_values):.6f}")
         print(f"  Min IoU   (foreground): {min(iou_values):.6f}")
         print(f"  Max IoU   (foreground): {max(iou_values):.6f}")
+        print(f"  Min AJI:               {min(aji_values):.6f}")
+        print(f"  Max AJI:               {max(aji_values):.6f}")
 
 
 def main() -> None:
@@ -243,6 +218,7 @@ def main() -> None:
             print("  Status: success")
             print(f"  Dice (fg): {metrics_row['dice_fg']}")
             print(f"  IoU  (fg): {metrics_row['iou_fg']}")
+            print(f"  AJI:      {metrics_row['aji']}")
             print()
 
         except Exception as exc:
@@ -253,6 +229,7 @@ def main() -> None:
                     "shape": "",
                     "dice_fg": "",
                     "iou_fg": "",
+                    "aji": "",
                     "gt_foreground_pixels": "",
                     "pred_foreground_pixels": "",
                 }
@@ -268,6 +245,7 @@ def main() -> None:
         "shape",
         "dice_fg",
         "iou_fg",
+        "aji",
         "gt_foreground_pixels",
         "pred_foreground_pixels",
     ]

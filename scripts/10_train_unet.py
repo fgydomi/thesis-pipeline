@@ -217,6 +217,9 @@ def main() -> None:
         samples_per_epoch=int(config["data"]["samples_per_epoch"]),
         augment=True,
         preload=bool(config["data"].get("preload", True)),
+        foreground_sampling_prob=float(config["data"].get("foreground_sampling_prob", 0.0)),
+        min_foreground_fraction=float(config["data"].get("min_foreground_fraction", 0.0)),
+        max_sampling_tries=int(config["data"].get("max_sampling_tries", 10)),
     )
 
     val_dataset = FullImageUNetDataset(

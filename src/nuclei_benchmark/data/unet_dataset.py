@@ -151,6 +151,9 @@ class RandomPatchUNetDataset(Dataset):
         samples_per_epoch: int = 512,
         augment: bool = True,
         preload: bool = True,
+        foreground_sampling_prob: float = 0.0,
+        min_foreground_fraction: float = 0.0,
+        max_sampling_tries: int = 10,
     ) -> None:
         if not pairs:
             raise ValueError("pairs must not be empty")
@@ -160,11 +163,30 @@ class RandomPatchUNetDataset(Dataset):
             raise ValueError(
                 f"samples_per_epoch must be positive, got {samples_per_epoch}"
             )
+        if not 0.0 <= foreground_sampling_prob <= 1.0:
+            raise ValueError(
+                "foreground_sampling_prob must be between 0 and 1, "
+                f"got {foreground_sampling_prob}"
+            )
+
+        if not 0.0 <= min_foreground_fraction <= 1.0:
+            raise ValueError(
+                "min_foreground_fraction must be between 0 and 1, "
+                f"got {min_foreground_fraction}"
+            )
+
+        if max_sampling_tries <= 0:
+            raise ValueError(
+                f"max_sampling_tries must be positive, got {max_sampling_tries}"
+            )
 
         self.patch_size = patch_size
         self.samples_per_epoch = samples_per_epoch
         self.augment = augment
         self.preload = preload
+        self.foreground_sampling_prob = foreground_sampling_prob
+        self.min_foreground_fraction = min_foreground_fraction
+        self.max_sampling_tries = max_sampling_tries
 
         if preload:
             self.records: list[dict[str, Any] | ImageMaskPair] = [
@@ -216,17 +238,38 @@ class RandomPatchUNetDataset(Dataset):
                 f"Patch size {self.patch_size} is larger than image shape {target.shape}."
             )
 
-        top = 0 if height == self.patch_size else np.random.randint(
-            0, height - self.patch_size + 1
-        )
-        left = 0 if width == self.patch_size else np.random.randint(
-            0, width - self.patch_size + 1
+        require_foreground = (
+            self.foreground_sampling_prob > 0.0
+            and self.min_foreground_fraction > 0.0
+            and np.random.rand() < self.foreground_sampling_prob
         )
 
-        image_patch = image[top : top + self.patch_size, left : left + self.patch_size]
-        target_patch = target[top : top + self.patch_size, left : left + self.patch_size]
+        selected_patch: tuple[np.ndarray, np.ndarray] | None = None
 
-        return image_patch, target_patch
+        for _ in range(self.max_sampling_tries):
+            top = 0 if height == self.patch_size else np.random.randint(
+                0, height - self.patch_size + 1
+            )
+            left = 0 if width == self.patch_size else np.random.randint(
+                0, width - self.patch_size + 1
+            )
+
+            image_patch = image[top : top + self.patch_size, left : left + self.patch_size]
+            target_patch = target[top : top + self.patch_size, left : left + self.patch_size]
+
+            if not require_foreground:
+                return image_patch, target_patch
+
+            foreground_fraction = float(target_patch.mean())
+            if foreground_fraction >= self.min_foreground_fraction:
+                return image_patch, target_patch
+
+            selected_patch = (image_patch, target_patch)
+
+        if selected_patch is None:
+            raise RuntimeError("Failed to sample any patch.")
+
+        return selected_patch
 
     def _apply_augmentations(
         self,

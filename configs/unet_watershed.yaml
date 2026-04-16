@@ -1,13 +1,17 @@
 model_name: unet_watershed
 
 runtime:
-  device: cpu
+  device: cuda
 
 model:
-  foreground_source: binary_mask
+  checkpoint_path: outputs/checkpoints/unet_fg_biased/unet_best.pt
+  in_channels: 3
+  out_channels: 1
+  base_channels: 32
 
 inference:
-  threshold: 0.5
+  tile_size: 256
+  threshold: 0.45
   min_size: 16
   min_distance: 9
 
